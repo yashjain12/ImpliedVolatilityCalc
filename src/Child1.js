@@ -81,7 +81,7 @@ class Child1 extends Component {
     const b = 5;
     
     
-    group.selectAll('.circle1').data(dataToPlot).join('circle').attr('class', 'circle1').attr('cx', (d) => x_scale(d.Date)).attr('cy', (d) => y_scale(d.Open)).attr("r", 5).style("fill", "#e41a1c")
+    group.selectAll('.circle1').data(dataToPlot).join('circle').attr('class', 'circle1').attr('cx', (d) => x_scale(d.Date)).attr('cy', (d) => y_scale(d.Open)).attr("opacity", "0.79").attr("r", 5).style("fill", "#e41a1c")
     .on("mouseover", (event, d) => {
       tooltipinfo.style("visibility", "visible").attr("transform", `translate(${x_scale(d.Date) + a}, ${y_scale(d.Open) + b})`);
       tooltipinfo.select(".tooltipinfo0").text(`Date: ${d.Date.toLocaleDateString()}`);
@@ -102,7 +102,7 @@ class Child1 extends Component {
       tooltipinfo.attr("opacity", 0);
       tooltipinfo.selectAll("text").text("");
     });*/
-    group.selectAll('.circle2').data(dataToPlot).join('circle').attr('class', 'circle2').attr('cx', (d) => x_scale(d.Date)).attr('cy', (d) => y_scale(d.Close)).attr("r", 5).style("fill", "#b2df8a")
+    group.selectAll('.circle2').data(dataToPlot).join('circle').attr('class', 'circle2').attr('cx', (d) => x_scale(d.Date)).attr('cy', (d) => y_scale(d.Close)).attr("opacity", "0.79").attr("r", 5).style("fill", "#b2df8a")
     .on("mouseover", (event, d) => {
       tooltipinfo.style("visibility", "visible").attr("transform", `translate(${x_scale(d.Date) + a}, ${y_scale(d.Close) + b})`);
       tooltipinfo.select(".tooltipinfo0").text(`Date: ${d.Date.toLocaleDateString()}`);
