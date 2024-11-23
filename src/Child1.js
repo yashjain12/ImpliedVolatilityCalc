@@ -64,7 +64,7 @@ class Child1 extends Component {
     
     const tooltipinfo = group.append("g").attr("class", "tooltip-group").style("visibility", "hidden")
 
-    tooltipinfo.append("rect").attr("class", "tooltip").attr("fill", "black").attr("opacity", 0.8).attr("width", 120).attr("height", 75).attr("rx", 5).attr("ry", 5);
+    tooltipinfo.append("rect").attr("class", "tooltip").attr("fill", "black").attr("opacity", 1).attr("width", 120).attr("height", 75).attr("rx", 5).attr("ry", 5);
 
     tooltipinfo
       .selectAll("text")
@@ -81,8 +81,12 @@ class Child1 extends Component {
     const b = 5;
     
     
-    group.selectAll('.circle1').data(dataToPlot).join('circle').attr('class', 'circle1').attr('cx', (d) => x_scale(d.Date)).attr('cy', (d) => y_scale(d.Open)).attr("opacity", "0.79").attr("r", 5).style("fill", "#e41a1c")
+    group.selectAll('.circle1').data(dataToPlot).join('circle').attr('class', 'circle1').attr('cx', (d) => x_scale(d.Date)).attr('cy', (d) => y_scale(d.Open))
+    .attr("opacity", "0.79").attr("r", 5).style("fill", "#e41a1c")
     .on("mouseover", (event, d) => {
+
+      const i_one = group.selectAll(".circle1").data().indexOf(d);
+
       tooltipinfo.style("visibility", "visible").attr("transform", `translate(${x_scale(d.Date) + a}, ${y_scale(d.Open) + b})`);
       tooltipinfo.select(".tooltipinfo0").text(`Date: ${d.Date.toLocaleDateString()}`);
       tooltipinfo.select(".tooltipinfo1").text(`Open: ${d.Open.toFixed(2)}`);
@@ -90,9 +94,29 @@ class Child1 extends Component {
       tooltipinfo.select(".tooltipinfo3").text(`Difference: ${(d.Close - d.Open).toFixed(2)}`);
       console.log("x client",event.clientX)
       console.log("scale", x_scale(d.Date))
+
+      group.selectAll(".circle1")
+        .attr("opacity", (circleD, index) => {
+            /*next two circles check*/
+            if (index > i_one && index <= i_one + 2) {
+                return 0; 
+            }
+            return 0.79; 
+        });
+        group.selectAll('.circle2').attr("opacity", (circleD, index) => {
+          console.log("i", i_one)
+          console.log("index", index)
+          if (index > i_one && index <= i_one + 2) {
+            console.log("returned xero")
+            return 0
+          }
+          return 0.79
+        })
+
     })
-    /*.on("mousemove", (event) => tooltipinfo.style("transform", `translate(${event.clientX + a}px, ${event.clientY + b}px)`))*/
-    .on("mouseout", () => tooltipinfo.style("visibility", "hidden"));/*
+    .on("mouseout", () => {tooltipinfo.style("visibility", "hidden")
+      group.selectAll("circle").attr("opacity", 0.79)
+    });/*
     .on("mousemove", (event, d) => {
       tooltipinfo.attr(
         "transform",
@@ -102,16 +126,34 @@ class Child1 extends Component {
       tooltipinfo.attr("opacity", 0);
       tooltipinfo.selectAll("text").text("");
     });*/
-    group.selectAll('.circle2').data(dataToPlot).join('circle').attr('class', 'circle2').attr('cx', (d) => x_scale(d.Date)).attr('cy', (d) => y_scale(d.Close)).attr("opacity", "0.79").attr("r", 5).style("fill", "#b2df8a")
+    group.selectAll('.circle2').data(dataToPlot).join('circle').attr('class', 'circle2').attr('cx', (d) => x_scale(d.Date)).attr('cy', (d) => y_scale(d.Close))
+    .attr("opacity", "0.79").attr("r", 5).style("fill", "#b2df8a")
     .on("mouseover", (event, d) => {
+      const i_two = group.selectAll(".circle2").data().indexOf(d);
+
       tooltipinfo.style("visibility", "visible").attr("transform", `translate(${x_scale(d.Date) + a}, ${y_scale(d.Close) + b})`);
       tooltipinfo.select(".tooltipinfo0").text(`Date: ${d.Date.toLocaleDateString()}`);
       tooltipinfo.select(".tooltipinfo1").text(`Open: ${d.Open.toFixed(2)}`);
       tooltipinfo.select(".tooltipinfo2").text(`Close: ${d.Close.toFixed(2)}`);
       tooltipinfo.select(".tooltipinfo3").text(`Difference: ${(d.Close - d.Open).toFixed(2)}`);
+      group.selectAll('.circle1').attr("opacity", (circleD, index) => {
+        if (index > i_two && index <= i_two + 2) {
+          return 0
+        }
+        return 0.79
+      })
+      group.selectAll('.circle2').attr("opacity", (circleD, index) => {
+        if (index > i_two && index <= i_two + 2) {
+          return 0
+        }
+        return 0.79
+      })
     })
     /*.on("mousemove", (event) => tooltipinfo.style("transform", `translate(${event.pageX + a}px, ${event.pageY + b}px)`))*/
-    .on("mouseout", () => tooltipinfo.style("visibility", "hidden"));
+    .on("mouseout", () => {
+      tooltipinfo.style("visibility", "hidden")
+      group.selectAll('circle').attr("opacity", "0.79")
+    });
 
     group.selectAll('.legend').data([0]).join('rect').attr('class', 'legend').attr('width', 40).attr('height', 40).style('fill', '#b2df8a').attr("transform", `translate(${10 + innerWidth}, 0)`)
     group.selectAll('.legendtext').data([0]).join('text').attr('class', 'legend').text('Open').attr("transform", `translate(${innerWidth + 55}, 25)`).attr('font-size', '22')
