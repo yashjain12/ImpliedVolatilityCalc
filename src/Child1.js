@@ -60,7 +60,9 @@ class Child1 extends Component {
     group.selectAll(".x axis").data([0]).join('g').attr('class', 'x axis').attr('transform', `translate(0, ${innerHeight})`).call(d3.axisBottom(x_scale))
     .selectAll("text").attr("transform", "rotate(45),translate(35,-2)").style("text-anchor", "end");
     group.selectAll(".y axis").data([0]).join('g').attr('class', 'y axis').attr('transform', `translate(0, 0)`).call(d3.axisLeft(y_scale))
-    const tooltipinfo = group.append("g").attr("class", "tooltip-group").style("visibility", "hidden");
+
+    
+    const tooltipinfo = group.append("g").attr("class", "tooltip-group").style("visibility", "hidden")
 
     tooltipinfo.append("rect").attr("class", "tooltip").attr("fill", "black").attr("opacity", 0.8).attr("width", 120).attr("height", 75).attr("rx", 5).attr("ry", 5);
 
@@ -75,19 +77,21 @@ class Child1 extends Component {
       .attr("x", 10);
 
     /* Random correction to mouse positions*/
-    const a = -557;
-    const b = -400;
+    const a = 5;
+    const b = 5;
     
     
     group.selectAll('.circle1').data(dataToPlot).join('circle').attr('class', 'circle1').attr('cx', (d) => x_scale(d.Date)).attr('cy', (d) => y_scale(d.Open)).attr("r", 5).style("fill", "#e41a1c")
     .on("mouseover", (event, d) => {
       tooltipinfo.style("visibility", "visible").attr("transform", `translate(${x_scale(d.Date) + a}, ${y_scale(d.Open) + b})`);
       tooltipinfo.select(".tooltipinfo0").text(`Date: ${d.Date.toLocaleDateString()}`);
-      tooltipinfo.select(".tooltipinfo1").text(`Open: ${d.Open}`);
-      tooltipinfo.select(".tooltipinfo2").text(`Close: ${d.Close}`);
+      tooltipinfo.select(".tooltipinfo1").text(`Open: ${d.Open.toFixed(2)}`);
+      tooltipinfo.select(".tooltipinfo2").text(`Close: ${d.Close.toFixed(2)}`);
       tooltipinfo.select(".tooltipinfo3").text(`Difference: ${(d.Close - d.Open).toFixed(2)}`);
+      console.log("x client",event.clientX)
+      console.log("scale", x_scale(d.Date))
     })
-    .on("mousemove", (event) => tooltipinfo.style("transform", `translate(${event.pageX + a}px, ${event.pageY + b}px)`))
+    /*.on("mousemove", (event) => tooltipinfo.style("transform", `translate(${event.clientX + a}px, ${event.clientY + b}px)`))*/
     .on("mouseout", () => tooltipinfo.style("visibility", "hidden"));/*
     .on("mousemove", (event, d) => {
       tooltipinfo.attr(
@@ -102,11 +106,11 @@ class Child1 extends Component {
     .on("mouseover", (event, d) => {
       tooltipinfo.style("visibility", "visible").attr("transform", `translate(${x_scale(d.Date) + a}, ${y_scale(d.Close) + b})`);
       tooltipinfo.select(".tooltipinfo0").text(`Date: ${d.Date.toLocaleDateString()}`);
-      tooltipinfo.select(".tooltipinfo1").text(`Open: ${d.Open}`);
-      tooltipinfo.select(".tooltipinfo2").text(`Close: ${d.Close}`);
+      tooltipinfo.select(".tooltipinfo1").text(`Open: ${d.Open.toFixed(2)}`);
+      tooltipinfo.select(".tooltipinfo2").text(`Close: ${d.Close.toFixed(2)}`);
       tooltipinfo.select(".tooltipinfo3").text(`Difference: ${(d.Close - d.Open).toFixed(2)}`);
     })
-    .on("mousemove", (event) => tooltipinfo.style("transform", `translate(${event.pageX + a}px, ${event.pageY + b}px)`))
+    /*.on("mousemove", (event) => tooltipinfo.style("transform", `translate(${event.pageX + a}px, ${event.pageY + b}px)`))*/
     .on("mouseout", () => tooltipinfo.style("visibility", "hidden"));
 
     group.selectAll('.legend').data([0]).join('rect').attr('class', 'legend').attr('width', 40).attr('height', 40).style('fill', '#b2df8a').attr("transform", `translate(${10 + innerWidth}, 0)`)
