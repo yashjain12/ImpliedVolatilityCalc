@@ -1,70 +1,130 @@
-# Getting Started with Create React App
+# Implied Volatility Calculator
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+An automated tool that scrapes options data from Yahoo Finance and calculates implied volatility using the Black-Scholes model with Newton's method optimization.
 
-## Available Scripts
+## Overview
 
-In the project directory, you can run:
+This project takes a stock ticker as input and automatically:
+1. Scrapes all available option strike prices and current market data
+2. Applies Newton's method to reverse-engineer implied volatility from market prices
+3. Calculates various Greeks (Vega, Volga, Ultima) for volatility sensitivity analysis
+4. Outputs everything into a clean pandas DataFrame
 
-### `npm start`
+## Project Structure
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```
+├── scraper.py          # Web scraping for strike prices
+├── data_fetcher.py     # Price and risk-free rate collection
+├── calculations.py     # Black-Scholes math and Newton's method
+└── main.py            # Threading coordination and final assembly
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## How It Works
 
-### `npm test`
+### 1. **Data Scraping** (`scraper.py` & `data_fetcher.py`)
+- Uses Selenium WebDriver to navigate Yahoo Finance
+- Scrapes all available strike prices for the given stock
+- Fetches current stock price, option prices, and 13-week Treasury rate
+- Handles time-to-expiration calculations automatically
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 2. **Mathematical Engine** (`calculations.py`)
+The Black-Scholes formula and Greeks calculations power the volatility solver:
 
-### `npm run build`
+```python
+def call_price(S, K, T, rf, sigma):
+    # Black-Scholes European call option pricing
+    d1 = (np.log(S / K) + (rf + sigma ** 2 / 2) * T) / sigma * np.sqrt(T)
+    d2 = d1 - sigma * np.sqrt(T)
+    call = S * N(d1) -  N(d2)* K * np.exp(-rf * T)
+    return call
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+def vega(S, K, T, rf, sigma): 
+    # First derivative: sensitivity to volatility changes
+    d1 = (np.log(S / K) + (rf + sigma ** 2 / 2) * T) / sigma * np.sqrt(T)
+    vega = S * N_prime(d1) * np.sqrt(T)
+    return vega
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+def volga(S, K, T, rf, sigma):
+    # Second derivative: rate of change of vega
+    d1 = (np.log(S / K) + (rf + sigma ** 2 / 2) * T) / sigma * np.sqrt(T)
+    d2 = d1 - sigma * np.sqrt(T)
+    volga = vega(S, K, T, rf, sigma) * (d1*d2)/sigma
+    return volga
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+**The Problem**: Given a market price, what volatility makes Black-Scholes match that price?
+**Solution**: Newton's method uses Vega (first derivative) to iteratively solve for volatility.
 
-### `npm run eject`
+### 3. **Parallel Processing** (`main.py`)
+ThreadPoolExecutor coordinates data fetching efficiently:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```python
+with ThreadPoolExecutor(max_workers=20) as executor:
+    # Parallel initial data fetch
+    future_price = executor.submit(get_price, 0, stock)
+    future_rf = executor.submit(get_rf)
+    
+    S, _ = future_price.result()  # Stock price
+    rf = future_rf.result()       # Risk-free rate
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+# Sequential strike processing (shares browser instance)
+for K in strikes:
+    C, T = get_price(K, stock)
+    iv = ImpVol(C, S, K, T, rf)
+    # Calculate Greeks...
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- **Parallel**: Stock price and risk-free rate fetched simultaneously
+- **Sequential**: Strike processing to avoid browser conflicts
+- **Efficiency**: Initial parallel fetch saves ~50% of data collection time
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 4. **Data Assembly**
+All results flow into a pandas DataFrame with columns:
+- Stock info (ticker, spot price, days to expiration)
+- Market data (strike price, call price, risk-free rate)
+- Calculated metrics (implied volatility, Vega, Volga, Ultima)
 
-## Learn More
+## Key Concepts
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Newton's Method Application
+The core algorithm solves for implied volatility by iteratively refining guesses:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```python
+def ImpVol(C, S, K, T, rf, err = 1e-4, max = 100):
+    # Newton's method: x_(n+1) = x_n - g(x_n)/g'(x_n)
+    # where g(sigma) = f(sigma) - C = 0
+    
+    sigma = 0.7  # Initial guess: 70% volatility
+    for i in range(max):
+        g_func = call_price(S, K, T, rf, sigma) - C
+        if abs(g_func) < err:  # Converged within tolerance
+            break
+        if abs(vega(S, K, T, rf, sigma)) < 1:
+            # When derivative is too small, use third-order correction
+            sigma +=  3 * volga(S, K, T, rf, sigma) / (ultima(S, K, T, rf, sigma))
+        else:
+            # Standard Newton-Raphson update
+            sigma -= (call_price(S, K, T, rf, sigma) - C) / vega(S, K, T, rf, sigma)
+    return sigma
+```
 
-### Code Splitting
+**Process:**
+1. Start with 70% volatility guess
+2. Calculate theoretical price using Black-Scholes
+3. Compare to actual market price
+4. Use Vega (∂Price/∂σ) to adjust volatility
+5. Repeat until theoretical price matches market within 0.0001 tolerance
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Usage
 
-### Analyzing the Bundle Size
+```python
+python main.py
+# Enter stock ticker when prompted
+# Results automatically display and save to CSV
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Output
+The final DataFrame provides a complete volatility surface analysis, showing how implied volatility varies across different strike prices for the same expiration date. This data is valuable for:
+- Options trading strategy development
+- Risk management and portfolio analysis  
+- Market sentiment analysis through volatility skew patterns
