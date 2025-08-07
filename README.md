@@ -133,6 +133,6 @@ For example, we can plot the volatility of a particular option with respect to t
 ```python
 plt.plot(df['Strike'], df['Implied Vol'])
 ```
-<img width="750" height="455" alt="image" src="https://github.com/user-attachments/assets/b4ac289d-7467-4e0f-8a90-b5819949c33a" />
+<img width="1046" height="617" alt="image" src="https://github.com/user-attachments/assets/1ee530ca-6f9e-4a18-b619-22d31a464d4c" />
 
 This seems correct! Implied volatility tends to be lowest for options that are at-the-money, also known as the **[Volatility Smile](http://wikipedia.org/wiki/Volatility_smile)**. In particular for a given expiration, options whose strike price differs substantially from the underlying asset's price command higher prices (and thus implied volatilities) than what is suggested by standard option pricing models.
