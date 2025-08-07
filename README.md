@@ -128,3 +128,12 @@ The final DataFrame provides a complete volatility surface analysis, showing how
 - Options trading strategy development
 - Risk management and portfolio analysis  
 - Market sentiment analysis through volatility skew patterns
+
+For example, we can plot the volatility of a particular option with respect to the strike price. As an example:
+```python
+plt.plot(df['Strike'], df['Implied Vol'])
+```
+<img width="750" height="455" alt="image" src="https://github.com/user-attachments/assets/b4ac289d-7467-4e0f-8a90-b5819949c33a" />
+
+This seems correct! Implied volatility tends to be lowest for options that are at-the-money, also known as the [**Volatility Smile**
+]([url](https://en.wikipedia.org/wiki/Volatility_smile)). In particular for a given expiration, options whose strike price differs substantially from the underlying asset's price command higher prices (and thus implied volatilities) than what is suggested by standard option pricing models.
